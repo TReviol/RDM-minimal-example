@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>f(x) = x^n Visualisierung</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: sans-serif; margin: 40px; }
+    #controls { margin-bottom: 20px; }
+  </style>
+</head>
+<body>
+
+<h2>f(x) = x^n</h2>
+
+<div id="controls">
+  <label for="nSlider">Exponent n: <span id="nValue">1</span></label><br>
+  <input type="range" id="nSlider" min="1" max="5" step="1" value="1">
+</div>
+
+<canvas id="chart" width="600" height="400"></canvas>
+
+<script>
+  const xValues = [];
+  for (let x = 0; x <= 10; x += 0.1) {
+    xValues.push(parseFloat(x.toFixed(1)));
+  }
+
+  function computeY(n) {
+    return xValues.map(x => Math.pow(x, n));
+  }
+
+  const ctx = document.getElementById('chart').getContext('2d');
+
+  let chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: xValues,
+      datasets: [{
+        label: 'f(x) = x^1',
+        data: computeY(1),
+        borderWidth: 2,
+        pointRadius: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      scales: {
+        x: { title: { display: true, text: 'x' } },
+        y: { title: { display: true, text: 'f(x)' } }
+      }
+    }
+  });
+
+  const slider = document.getElementById('nSlider');
+  const nValue = document.getElementById('nValue');
+
+  slider.addEventListener('input', () => {
+    const n = parseInt(slider.value);
+    nValue.textContent = n;
+
+    chart.data.datasets[0].data = computeY(n);
+    chart.data.datasets[0].label = `f(x) = x^${n}`;
+    chart.update();
+  });
+</script>
+
+</body>
+</html>
