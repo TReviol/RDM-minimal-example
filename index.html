@@ -1,68 +1,101 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8" />
-  <title>f(x) = x^n Visualisierung</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body { font-family: sans-serif; margin: 40px; }
-    #controls { margin-bottom: 20px; }
-  </style>
+<meta charset="UTF-8">
+<title>Isotherm & Kinetik Viewer</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+body { font-family: sans-serif; margin: 40px; }
+#meta { margin-top:20px; font-size: 14px; }
+select { margin-bottom: 20px; }
+</style>
 </head>
+
 <body>
 
-<h2>f(x) = x^n</h2>
+<h2>Datensatz auswählen</h2>
 
-<div id="controls">
-  <label for="nSlider">Exponent n: <span id="nValue">1</span></label><br>
-  <input type="range" id="nSlider" min="1" max="5" step="1" value="1">
-</div>
+<select id="datasetSelect"></select>
 
 <canvas id="chart" width="600" height="400"></canvas>
 
+<div id="meta"></div>
+
 <script>
-  const xValues = [];
-  for (let x = 0; x <= 10; x += 0.1) {
-    xValues.push(parseFloat(x.toFixed(1)));
-  }
+let datasets = [];
 
-  function computeY(n) {
-    return xValues.map(x => Math.pow(x, n));
-  }
+async function loadNDJSON(path) {
+  const res = await fetch(path);
+  const text = await res.text();
+  return text.trim().split("\n").map(JSON.parse);
+}
 
-  const ctx = document.getElementById('chart').getContext('2d');
+async function init() {
+  const iso = await loadNDJSON("Data/isotherms.ndjson");
+  const kin = await loadNDJSON("Data/kinetics.ndjson");
 
-  let chart = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: xValues,
-      datasets: [{
-        label: 'f(x) = x^1',
-        data: computeY(1),
-        borderWidth: 2,
-        pointRadius: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      scales: {
-        x: { title: { display: true, text: 'x' } },
-        y: { title: { display: true, text: 'f(x)' } }
-      }
+  datasets = [...iso, ...kin];
+
+  const select = document.getElementById("datasetSelect");
+
+  datasets.forEach((d, i) => {
+    const opt = document.createElement("option");
+    opt.value = i;
+    opt.text = `${d.type} - ${d.name}`;
+    select.appendChild(opt);
+  });
+
+  select.addEventListener("change", () => render(select.value));
+
+  render(0);
+}
+
+const ctx = document.getElementById('chart').getContext('2d');
+
+let chart = new Chart(ctx, {
+  type: 'line',
+  data: { datasets: [] },
+  options: {
+    parsing: false,
+    scales: {
+      x: { type: 'linear', title: { display: true, text: 'x' }},
+      y: { title: { display: true, text: 'y' }}
     }
-  });
+  }
+});
 
-  const slider = document.getElementById('nSlider');
-  const nValue = document.getElementById('nValue');
+function render(index) {
+  const d = datasets[index];
 
-  slider.addEventListener('input', () => {
-    const n = parseInt(slider.value);
-    nValue.textContent = n;
+  chart.data.datasets = [{
+    label: d.type,
+    data: d.data,
+    borderWidth: 2,
+    pointRadius: 3
+  }];
 
-    chart.data.datasets[0].data = computeY(n);
-    chart.data.datasets[0].label = `f(x) = x^${n}`;
-    chart.update();
-  });
+  chart.options.scales.x.title.text =
+    d.type === "isotherm"
+      ? "Gleichgewichtskonzentration (mg/L)"
+      : "Zeit (min)";
+
+  chart.options.scales.y.title.text =
+    d.type === "isotherm"
+      ? "Beladung (mg/g)"
+      : "Konzentration (mg/L)";
+
+  chart.update();
+
+  // Metadaten anzeigen
+  const metaDiv = document.getElementById("meta");
+  metaDiv.innerHTML = "<h3>Metadaten</h3>" +
+    Object.entries(d.meta)
+      .map(([k,v]) => `<b>${k}:</b> ${v}`)
+      .join("<br>");
+}
+
+init();
 </script>
 
 </body>
