@@ -9,90 +9,198 @@
 body { font-family: sans-serif; margin: 40px; }
 #meta { margin-top:20px; font-size: 14px; }
 select { margin-bottom: 20px; }
+.section { margin-bottom: 40px; }
+.chartWrapper { width: 700px; max-width: 100%; height: 360px; }
+.chartCanvas { width: 100% !important; height: 100% !important; }
 </style>
 </head>
 
 <body>
 
-<h2>Datensatz auswählen</h2>
+<h2>Isotherm & Kinetik Viewer</h2>
 
-<select id="datasetSelect"></select>
+<div class="section">
+  <h3>Isothermen</h3>
+  <select id="isothermSelect"></select>
+  <div class="chartWrapper">
+    <canvas id="isothermChart" class="chartCanvas"></canvas>
+  </div>
+</div>
 
-<canvas id="chart" width="600" height="400"></canvas>
+<div class="section">
+  <h3>Kinetiken</h3>
+  <select id="kineticSelect"></select>
+  <div class="chartWrapper">
+    <canvas id="kineticChart" class="chartCanvas"></canvas>
+  </div>
+</div>
 
 <div id="meta"></div>
 
 <script>
-let datasets = [];
+let isothermDatasets = [];
+let kineticDatasets = [];
 
-async function loadNDJSON(path) {
-  const res = await fetch(path);
-  const text = await res.text();
-  return text.trim().split("\n").map(JSON.parse);
+function parseDatasetText(text) {
+  const trimmed = text.trim();
+  if (!trimmed) return [];
+
+  // Support both NDJSON and regular JSON (object or array)
+  try {
+    const parsed = JSON.parse(trimmed);
+    return Array.isArray(parsed) ? parsed : [parsed];
+  } catch {
+    return trimmed
+      .split("\n")
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map(JSON.parse);
+  }
+}
+
+async function loadDataset(paths) {
+  const pathList = Array.isArray(paths) ? paths : [paths];
+  let lastError = null;
+
+  for (const path of pathList) {
+    try {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(`HTTP ${res.status} for ${path}`);
+      const text = await res.text();
+      return parseDatasetText(text);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+
+  throw lastError || new Error("Konnte Datensatz nicht laden");
 }
 
 async function init() {
-  const iso = await loadNDJSON("Data/isotherms.ndjson");
-  const kin = await loadNDJSON("Data/kinetics.ndjson");
+  try {
+    const iso = await loadDataset(["Data/isotherms.ndjson", "Data/isotherms.json"]);
+    const kin = await loadDataset(["Data/kinetics.ndjson", "Data/kinetics.json"]);
 
-  datasets = [...iso, ...kin];
+    isothermDatasets = iso.filter((d) => d.type === "isotherm");
+    kineticDatasets = kin.filter((d) => d.type === "kinetic");
 
-  const select = document.getElementById("datasetSelect");
+    const isothermSelect = document.getElementById("isothermSelect");
+    const kineticSelect = document.getElementById("kineticSelect");
 
-  datasets.forEach((d, i) => {
-    const opt = document.createElement("option");
-    opt.value = i;
-    opt.text = `${d.type} - ${d.name}`;
-    select.appendChild(opt);
-  });
+    const isothermAllOpt = document.createElement("option");
+    isothermAllOpt.value = "all";
+    isothermAllOpt.text = "Alle Isothermen";
+    isothermSelect.appendChild(isothermAllOpt);
 
-  select.addEventListener("change", () => render(select.value));
+    isothermDatasets.forEach((d, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.text = d.name;
+      isothermSelect.appendChild(opt);
+    });
 
-  render(0);
+    const kineticAllOpt = document.createElement("option");
+    kineticAllOpt.value = "all";
+    kineticAllOpt.text = "Alle Kinetiken";
+    kineticSelect.appendChild(kineticAllOpt);
+
+    kineticDatasets.forEach((d, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.text = d.name;
+      kineticSelect.appendChild(opt);
+    });
+
+    isothermSelect.value = "all";
+    kineticSelect.value = "all";
+
+    isothermSelect.addEventListener("change", () => renderIsotherm(isothermSelect.value));
+    kineticSelect.addEventListener("change", () => renderKinetic(kineticSelect.value));
+
+    renderIsotherm("all");
+    renderKinetic("all");
+  } catch (err) {
+    document.getElementById("meta").innerHTML = `<b>Fehler beim Laden der Daten:</b> ${err.message}`;
+  }
 }
 
-const ctx = document.getElementById('chart').getContext('2d');
+const isothermCtx = document.getElementById('isothermChart').getContext('2d');
+const kineticCtx = document.getElementById('kineticChart').getContext('2d');
 
-let chart = new Chart(ctx, {
+let isothermChart = new Chart(isothermCtx, {
   type: 'line',
   data: { datasets: [] },
   options: {
+    responsive: true,
+    maintainAspectRatio: false,
     parsing: false,
     scales: {
-      x: { type: 'linear', title: { display: true, text: 'x' }},
-      y: { title: { display: true, text: 'y' }}
+      x: { type: 'linear', title: { display: true, text: 'Gleichgewichtskonzentration (mg/L)' }},
+      y: { title: { display: true, text: 'Beladung (mg/g)' }}
     }
   }
 });
 
-function render(index) {
-  const d = datasets[index];
+let kineticChart = new Chart(kineticCtx, {
+  type: 'line',
+  data: { datasets: [] },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    parsing: false,
+    scales: {
+      x: { type: 'linear', title: { display: true, text: 'Zeit (min)' }},
+      y: { title: { display: true, text: 'Konzentration (mg/L)' }}
+    }
+  }
+});
 
-  chart.data.datasets = [{
-    label: d.type,
+function buildChartSeries(dataItems, singleColor) {
+  return dataItems.map((d, idx) => ({
+    label: d.name,
     data: d.data,
     borderWidth: 2,
-    pointRadius: 3
-  }];
+    pointRadius: 3,
+    borderColor: singleColor || `hsl(${(idx * 53) % 360} 70% 45%)`,
+    backgroundColor: singleColor || `hsl(${(idx * 53) % 360} 70% 45%)`
+  }));
+}
 
-  chart.options.scales.x.title.text =
-    d.type === "isotherm"
-      ? "Gleichgewichtskonzentration (mg/L)"
-      : "Zeit (min)";
+function renderIsotherm(selection) {
+  const items = selection === "all"
+    ? isothermDatasets
+    : [isothermDatasets[Number(selection)]].filter(Boolean);
 
-  chart.options.scales.y.title.text =
-    d.type === "isotherm"
-      ? "Beladung (mg/g)"
-      : "Konzentration (mg/L)";
+  isothermChart.data.datasets = buildChartSeries(items, selection === "all" ? null : "#1f77b4");
+  isothermChart.update();
 
-  chart.update();
+  updateMeta();
+}
 
-  // Metadaten anzeigen
-  const metaDiv = document.getElementById("meta");
-  metaDiv.innerHTML = "<h3>Metadaten</h3>" +
-    Object.entries(d.meta)
-      .map(([k,v]) => `<b>${k}:</b> ${v}`)
-      .join("<br>");
+function renderKinetic(selection) {
+  const items = selection === "all"
+    ? kineticDatasets
+    : [kineticDatasets[Number(selection)]].filter(Boolean);
+
+  kineticChart.data.datasets = buildChartSeries(items, selection === "all" ? null : "#d62728");
+  kineticChart.update();
+
+  updateMeta();
+}
+
+function updateMeta() {
+  const isoValue = document.getElementById("isothermSelect").value;
+  const kinValue = document.getElementById("kineticSelect").value;
+
+  const isoText = isoValue === "all"
+    ? `Isothermen: ${isothermDatasets.length} Datensaetze sichtbar`
+    : `Isotherm: ${isothermDatasets[Number(isoValue)]?.name || "-"}`;
+
+  const kinText = kinValue === "all"
+    ? `Kinetiken: ${kineticDatasets.length} Datensaetze sichtbar`
+    : `Kinetik: ${kineticDatasets[Number(kinValue)]?.name || "-"}`;
+
+  document.getElementById("meta").innerHTML = `<h3>Auswahl</h3><b>${isoText}</b><br><b>${kinText}</b>`;
 }
 
 init();
