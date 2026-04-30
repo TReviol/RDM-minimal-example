@@ -272,8 +272,7 @@ th {
 const viewerConfigs = {
   isotherm: {
     title: "Isothermen",
-    prefix: "iso_",
-    pathCandidates: ["Data/isotherms.ndjson", "Data/isotherms.json"],
+    pathCandidates: ["Data/isotherms.ndjson"],
     type: "isotherm",
     chartId: "isothermChart",
     resetButtonId: "isothermResetButton",
@@ -289,8 +288,7 @@ const viewerConfigs = {
   },
   kinetic: {
     title: "Kinetiken",
-    prefix: "kin_",
-    pathCandidates: ["Data/kinetics.ndjson", "Data/kinetics.json"],
+    pathCandidates: ["Data/kinetics.ndjson"],
     type: "kinetic",
     chartId: "kineticChart",
     resetButtonId: "kineticResetButton",
@@ -348,71 +346,23 @@ async function loadDataset(paths) {
   throw lastError || new Error("Konnte Datensatz nicht laden");
 }
 
-async function discoverJsonFilesByPrefix(prefix) {
-  const response = await fetch("Data/");
-  if (!response.ok) {
-    throw new Error(`Data-Verzeichnis konnte nicht gelesen werden (HTTP ${response.status})`);
-  }
-
-  const indexHtml = await response.text();
-  const hrefRegex = /href\s*=\s*["']([^"']+)["']/gi;
-  const files = new Set();
-  let match;
-
-  while ((match = hrefRegex.exec(indexHtml)) !== null) {
-    const href = match[1];
-    const decoded = decodeURIComponent(href);
-    const normalized = decoded.split("?")[0].split("#")[0];
-    const fileName = normalized.split("/").pop() || "";
-    if (!fileName.toLowerCase().endsWith(".json")) continue;
-    if (!fileName.startsWith(prefix)) continue;
-    files.add(fileName);
-  }
-
-  return [...files].sort((left, right) => collator.compare(left, right));
-}
-
-async function loadDatasetsByPrefix(config) {
-  const fileNames = await discoverJsonFilesByPrefix(config.prefix);
-  if (fileNames.length === 0) {
-    throw new Error(`Keine Dateien mit Prefix \"${config.prefix}\" im Data-Verzeichnis gefunden`);
-  }
-
-  const datasets = [];
-  for (const fileName of fileNames) {
-    const parsed = await loadDataset(`Data/${fileName}`);
-    datasets.push(...parsed.map((dataset, index) => ({
-      ...dataset,
-      type: dataset.type || config.type,
-      name: dataset.name || dataset.id || `${fileName}#${index + 1}`
-    })));
-  }
-
-  return datasets;
-}
-
-async function loadDatasetsForViewer(config) {
-  try {
-    return await loadDatasetsByPrefix(config);
-  } catch {
-    const fallback = await loadDataset(config.pathCandidates);
-    return fallback.map((dataset, index) => ({
-      ...dataset,
-      type: dataset.type || config.type,
-      name: dataset.name || dataset.id || `${config.type}_${index + 1}`
-    }));
-  }
+function normalizeLoadedDatasets(config, datasets) {
+  return datasets.map((dataset, index) => ({
+    ...dataset,
+    type: dataset.type || config.type,
+    name: dataset.name || dataset.id || `${config.type}_${index + 1}`
+  }));
 }
 
 async function init() {
   try {
     const [iso, kin] = await Promise.all([
-      loadDatasetsForViewer(viewerConfigs.isotherm),
-      loadDatasetsForViewer(viewerConfigs.kinetic)
+      loadDataset(viewerConfigs.isotherm.pathCandidates),
+      loadDataset(viewerConfigs.kinetic.pathCandidates)
     ]);
 
-    viewerState.isotherm.datasets = iso;
-    viewerState.kinetic.datasets = kin;
+    viewerState.isotherm.datasets = normalizeLoadedDatasets(viewerConfigs.isotherm, iso);
+    viewerState.kinetic.datasets = normalizeLoadedDatasets(viewerConfigs.kinetic, kin);
 
     initViewer("isotherm");
     initViewer("kinetic");
