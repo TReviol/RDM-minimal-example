@@ -6,12 +6,138 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body { font-family: sans-serif; margin: 40px; }
-#meta { margin-top:20px; font-size: 14px; }
-select { margin-bottom: 20px; }
-.section { margin-bottom: 40px; }
-.chartWrapper { width: 700px; max-width: 100%; height: 360px; }
-.chartCanvas { width: 100% !important; height: 100% !important; }
+body {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  margin: 24px;
+  background: #f4f7fb;
+  color: #1f2937;
+}
+
+h2 {
+  margin-bottom: 24px;
+}
+
+h3, h4 {
+  margin: 0;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+  align-items: start;
+}
+
+.panel {
+  background: #ffffff;
+  border: 1px solid #d7dfeb;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.panelHeader {
+  margin-bottom: 16px;
+}
+
+.panelSubline {
+  margin-top: 6px;
+  color: #5b6472;
+  font-size: 14px;
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.filterField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filterField label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+select {
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 10px;
+  border: 1px solid #c7d2e0;
+  background: #f8fafc;
+  color: #111827;
+}
+
+.chartWrapper {
+  height: 360px;
+  margin-bottom: 18px;
+}
+
+.chartCanvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.tableSection {
+  margin-top: 18px;
+}
+
+.tableSection h4 {
+  margin-bottom: 10px;
+}
+
+.tableBox {
+  border: 1px solid #d7dfeb;
+  border-radius: 12px;
+  background: #fbfdff;
+  overflow: auto;
+  max-height: 300px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+th, td {
+  padding: 10px 12px;
+  border-bottom: 1px solid #e5ebf3;
+  text-align: left;
+  vertical-align: top;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  background: #eef4fb;
+  font-weight: 700;
+}
+
+.emptyState {
+  padding: 16px;
+  color: #5b6472;
+}
+
+#status {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #d7dfeb;
+}
+
+@media (max-width: 1100px) {
+  .dashboard {
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 </head>
 
@@ -19,27 +145,81 @@ select { margin-bottom: 20px; }
 
 <h2>Isotherm & Kinetik Viewer</h2>
 
-<div class="section">
-  <h3>Isothermen</h3>
-  <select id="isothermSelect"></select>
-  <div class="chartWrapper">
-    <canvas id="isothermChart" class="chartCanvas"></canvas>
-  </div>
-</div>
+<div class="dashboard">
+  <section class="panel">
+    <div class="panelHeader">
+      <h3>Isothermen</h3>
+      <div class="panelSubline" id="isothermSummary"></div>
+    </div>
+    <div id="isothermFilters" class="filterGrid"></div>
+    <div class="chartWrapper">
+      <canvas id="isothermChart" class="chartCanvas"></canvas>
+    </div>
+    <div class="tableSection">
+      <h4>Metadaten</h4>
+      <div class="tableBox" id="isothermMetaTable"></div>
+    </div>
+    <div class="tableSection">
+      <h4>Messdaten</h4>
+      <div class="tableBox" id="isothermDataTable"></div>
+    </div>
+  </section>
 
-<div class="section">
-  <h3>Kinetiken</h3>
-  <select id="kineticSelect"></select>
-  <div class="chartWrapper">
-    <canvas id="kineticChart" class="chartCanvas"></canvas>
+  <section class="panel">
+    <div class="panelHeader">
+      <h3>Kinetiken</h3>
+      <div class="panelSubline" id="kineticSummary"></div>
+    </div>
+    <div id="kineticFilters" class="filterGrid"></div>
+    <div class="chartWrapper">
+      <canvas id="kineticChart" class="chartCanvas"></canvas>
+    </div>
+    <div class="tableSection">
+      <h4>Metadaten</h4>
+      <div class="tableBox" id="kineticMetaTable"></div>
+    </div>
+    <div class="tableSection">
+      <h4>Messdaten</h4>
+      <div class="tableBox" id="kineticDataTable"></div>
+    </div>
   </div>
-</div>
 
-<div id="meta"></div>
+<div id="status"></div>
 
 <script>
-let isothermDatasets = [];
-let kineticDatasets = [];
+const viewerConfigs = {
+  isotherm: {
+    title: "Isothermen",
+    pathCandidates: ["Data/isotherms.ndjson", "Data/isotherms.json"],
+    type: "isotherm",
+    chartId: "isothermChart",
+    filtersId: "isothermFilters",
+    summaryId: "isothermSummary",
+    metaTableId: "isothermMetaTable",
+    dataTableId: "isothermDataTable",
+    xAxisLabel: "Gleichgewichtskonzentration (mg/L)",
+    yAxisLabel: "Beladung (mg/g)",
+    singleColor: "#1d4ed8"
+  },
+  kinetic: {
+    title: "Kinetiken",
+    pathCandidates: ["Data/kinetics.ndjson", "Data/kinetics.json"],
+    type: "kinetic",
+    chartId: "kineticChart",
+    filtersId: "kineticFilters",
+    summaryId: "kineticSummary",
+    metaTableId: "kineticMetaTable",
+    dataTableId: "kineticDataTable",
+    xAxisLabel: "Zeit (min)",
+    yAxisLabel: "Konzentration (mg/L)",
+    singleColor: "#dc2626"
+  }
+};
+
+const viewerState = {
+  isotherm: { datasets: [], filterKeys: [], filters: {}, chart: null },
+  kinetic: { datasets: [], filterKeys: [], filters: {}, chart: null }
+};
 
 function parseDatasetText(text) {
   const trimmed = text.trim();
@@ -78,82 +258,46 @@ async function loadDataset(paths) {
 
 async function init() {
   try {
-    const iso = await loadDataset(["Data/isotherms.ndjson", "Data/isotherms.json"]);
-    const kin = await loadDataset(["Data/kinetics.ndjson", "Data/kinetics.json"]);
+    const iso = await loadDataset(viewerConfigs.isotherm.pathCandidates);
+    const kin = await loadDataset(viewerConfigs.kinetic.pathCandidates);
 
-    isothermDatasets = iso.filter((d) => d.type === "isotherm");
-    kineticDatasets = kin.filter((d) => d.type === "kinetic");
+    viewerState.isotherm.datasets = iso.filter((dataset) => dataset.type === viewerConfigs.isotherm.type);
+    viewerState.kinetic.datasets = kin.filter((dataset) => dataset.type === viewerConfigs.kinetic.type);
 
-    const isothermSelect = document.getElementById("isothermSelect");
-    const kineticSelect = document.getElementById("kineticSelect");
+    initViewer("isotherm");
+    initViewer("kinetic");
 
-    const isothermAllOpt = document.createElement("option");
-    isothermAllOpt.value = "all";
-    isothermAllOpt.text = "Alle Isothermen";
-    isothermSelect.appendChild(isothermAllOpt);
-
-    isothermDatasets.forEach((d, i) => {
-      const opt = document.createElement("option");
-      opt.value = i;
-      opt.text = d.name;
-      isothermSelect.appendChild(opt);
-    });
-
-    const kineticAllOpt = document.createElement("option");
-    kineticAllOpt.value = "all";
-    kineticAllOpt.text = "Alle Kinetiken";
-    kineticSelect.appendChild(kineticAllOpt);
-
-    kineticDatasets.forEach((d, i) => {
-      const opt = document.createElement("option");
-      opt.value = i;
-      opt.text = d.name;
-      kineticSelect.appendChild(opt);
-    });
-
-    isothermSelect.value = "all";
-    kineticSelect.value = "all";
-
-    isothermSelect.addEventListener("change", () => renderIsotherm(isothermSelect.value));
-    kineticSelect.addEventListener("change", () => renderKinetic(kineticSelect.value));
-
-    renderIsotherm("all");
-    renderKinetic("all");
+    updateStatus();
   } catch (err) {
-    document.getElementById("meta").innerHTML = `<b>Fehler beim Laden der Daten:</b> ${err.message}`;
+    document.getElementById("status").innerHTML = `<b>Fehler beim Laden der Daten:</b> ${err.message}`;
   }
 }
 
-const isothermCtx = document.getElementById('isothermChart').getContext('2d');
-const kineticCtx = document.getElementById('kineticChart').getContext('2d');
-
-let isothermChart = new Chart(isothermCtx, {
-  type: 'line',
-  data: { datasets: [] },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    parsing: false,
-    scales: {
-      x: { type: 'linear', title: { display: true, text: 'Gleichgewichtskonzentration (mg/L)' }},
-      y: { title: { display: true, text: 'Beladung (mg/g)' }}
+function createChart(config) {
+  const ctx = document.getElementById(config.chartId).getContext("2d");
+  return new Chart(ctx, {
+    type: "line",
+    data: { datasets: [] },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      parsing: false,
+      interaction: {
+        mode: "nearest",
+        intersect: false
+      },
+      plugins: {
+        legend: {
+          position: "bottom"
+        }
+      },
+      scales: {
+        x: { type: "linear", title: { display: true, text: config.xAxisLabel }},
+        y: { title: { display: true, text: config.yAxisLabel }}
+      }
     }
-  }
-});
-
-let kineticChart = new Chart(kineticCtx, {
-  type: 'line',
-  data: { datasets: [] },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    parsing: false,
-    scales: {
-      x: { type: 'linear', title: { display: true, text: 'Zeit (min)' }},
-      y: { title: { display: true, text: 'Konzentration (mg/L)' }}
-    }
-  }
-});
+  });
+}
 
 function buildChartSeries(dataItems, singleColor) {
   return dataItems.map((d, idx) => ({
@@ -161,46 +305,180 @@ function buildChartSeries(dataItems, singleColor) {
     data: d.data,
     borderWidth: 2,
     pointRadius: 3,
+    tension: 0.2,
     borderColor: singleColor || `hsl(${(idx * 53) % 360} 70% 45%)`,
     backgroundColor: singleColor || `hsl(${(idx * 53) % 360} 70% 45%)`
   }));
 }
 
-function renderIsotherm(selection) {
-  const items = selection === "all"
-    ? isothermDatasets
-    : [isothermDatasets[Number(selection)]].filter(Boolean);
+function initViewer(viewerKey) {
+  const state = viewerState[viewerKey];
+  const config = viewerConfigs[viewerKey];
 
-  isothermChart.data.datasets = buildChartSeries(items, selection === "all" ? null : "#1f77b4");
-  isothermChart.update();
+  state.filterKeys = getFilterKeys(state.datasets);
+  state.filters = Object.fromEntries(["name", ...state.filterKeys].map((key) => [key, "all"]));
+  state.chart = createChart(config);
 
-  updateMeta();
+  renderFilterControls(viewerKey);
+  renderViewer(viewerKey);
 }
 
-function renderKinetic(selection) {
-  const items = selection === "all"
-    ? kineticDatasets
-    : [kineticDatasets[Number(selection)]].filter(Boolean);
-
-  kineticChart.data.datasets = buildChartSeries(items, selection === "all" ? null : "#d62728");
-  kineticChart.update();
-
-  updateMeta();
+function getFilterKeys(datasets) {
+  return [...new Set(datasets.flatMap((dataset) => Object.keys(dataset.meta || {})))].sort((left, right) => left.localeCompare(right, "de"));
 }
 
-function updateMeta() {
-  const isoValue = document.getElementById("isothermSelect").value;
-  const kinValue = document.getElementById("kineticSelect").value;
+function renderFilterControls(viewerKey) {
+  const state = viewerState[viewerKey];
+  const config = viewerConfigs[viewerKey];
+  const container = document.getElementById(config.filtersId);
 
-  const isoText = isoValue === "all"
-    ? `Isothermen: ${isothermDatasets.length} Datensaetze sichtbar`
-    : `Isotherm: ${isothermDatasets[Number(isoValue)]?.name || "-"}`;
+  container.innerHTML = "";
 
-  const kinText = kinValue === "all"
-    ? `Kinetiken: ${kineticDatasets.length} Datensaetze sichtbar`
-    : `Kinetik: ${kineticDatasets[Number(kinValue)]?.name || "-"}`;
+  const allKeys = ["name", ...state.filterKeys];
 
-  document.getElementById("meta").innerHTML = `<h3>Auswahl</h3><b>${isoText}</b><br><b>${kinText}</b>`;
+  allKeys.forEach((filterKey) => {
+    const wrapper = document.createElement("div");
+    wrapper.className = "filterField";
+
+    const label = document.createElement("label");
+    label.textContent = filterKey === "name" ? "Datensatz" : filterKey;
+
+    const select = document.createElement("select");
+    select.dataset.viewer = viewerKey;
+    select.dataset.filterKey = filterKey;
+
+    const defaultOption = document.createElement("option");
+    defaultOption.value = "all";
+    defaultOption.textContent = `All ${filterKey === "name" ? "datasets" : "values"}`;
+    select.appendChild(defaultOption);
+
+    getFilterValues(state.datasets, filterKey).forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      select.appendChild(option);
+    });
+
+    select.value = "all";
+    select.addEventListener("change", (event) => {
+      state.filters[filterKey] = event.target.value;
+      renderViewer(viewerKey);
+      updateStatus();
+    });
+
+    wrapper.appendChild(label);
+    wrapper.appendChild(select);
+    container.appendChild(wrapper);
+  });
+}
+
+function getFilterValues(datasets, filterKey) {
+  const values = datasets.map((dataset) => getDatasetFieldValue(dataset, filterKey)).filter((value) => value !== "");
+  return [...new Set(values)].sort((left, right) => left.localeCompare(right, "de"));
+}
+
+function getDatasetFieldValue(dataset, filterKey) {
+  if (filterKey === "name") return dataset.name || "";
+  return dataset.meta?.[filterKey] ?? "";
+}
+
+function getFilteredDatasets(viewerKey) {
+  const state = viewerState[viewerKey];
+  return state.datasets.filter((dataset) => Object.entries(state.filters).every(([filterKey, selectedValue]) => {
+    if (selectedValue === "all") return true;
+    return getDatasetFieldValue(dataset, filterKey) === selectedValue;
+  }));
+}
+
+function renderViewer(viewerKey) {
+  const state = viewerState[viewerKey];
+  const config = viewerConfigs[viewerKey];
+  const filteredDatasets = getFilteredDatasets(viewerKey);
+  const isSingleDataset = filteredDatasets.length === 1;
+
+  state.chart.data.datasets = buildChartSeries(filteredDatasets, isSingleDataset ? config.singleColor : null);
+  state.chart.update();
+
+  renderMetaTable(viewerKey, filteredDatasets);
+  renderDataTable(viewerKey, filteredDatasets);
+  updateSummary(viewerKey, filteredDatasets.length);
+}
+
+function updateSummary(viewerKey, visibleCount) {
+  const state = viewerState[viewerKey];
+  const config = viewerConfigs[viewerKey];
+  const activeFilters = Object.entries(state.filters).filter(([, value]) => value !== "all").length;
+
+  document.getElementById(config.summaryId).textContent = `${visibleCount} von ${state.datasets.length} Datensaetzen sichtbar, ${activeFilters} Filter aktiv`;
+}
+
+function renderMetaTable(viewerKey, datasets) {
+  const state = viewerState[viewerKey];
+  const config = viewerConfigs[viewerKey];
+  const container = document.getElementById(config.metaTableId);
+
+  if (datasets.length === 0) {
+    container.innerHTML = '<div class="emptyState">Keine Datensaetze fuer die aktuelle Filterkombination gefunden.</div>';
+    return;
+  }
+
+  const columns = ["name", ...state.filterKeys];
+  const headerCells = columns.map((column) => `<th>${column === "name" ? "Datensatz" : column}</th>`).join("");
+  const bodyRows = datasets.map((dataset) => {
+    const cells = columns.map((column) => `<td>${escapeHtml(getDatasetFieldValue(dataset, column) || "-")}</td>`).join("");
+    return `<tr>${cells}</tr>`;
+  }).join("");
+
+  container.innerHTML = `<table><thead><tr>${headerCells}</tr></thead><tbody>${bodyRows}</tbody></table>`;
+}
+
+function renderDataTable(viewerKey, datasets) {
+  const config = viewerConfigs[viewerKey];
+  const container = document.getElementById(config.dataTableId);
+
+  const rows = datasets.flatMap((dataset) => dataset.data.map((point, index) => ({
+    datasetName: dataset.name,
+    pointIndex: index + 1,
+    x: point.x,
+    y: point.y
+  })));
+
+  if (rows.length === 0) {
+    container.innerHTML = '<div class="emptyState">Keine Messpunkte fuer die aktuelle Filterkombination gefunden.</div>';
+    return;
+  }
+
+  const bodyRows = rows.map((row) => (
+    `<tr><td>${escapeHtml(row.datasetName)}</td><td>${row.pointIndex}</td><td>${row.x}</td><td>${row.y}</td></tr>`
+  )).join("");
+
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Datensatz</th>
+          <th>Punkt</th>
+          <th>x</th>
+          <th>y</th>
+        </tr>
+      </thead>
+      <tbody>${bodyRows}</tbody>
+    </table>`;
+}
+
+function updateStatus() {
+  const isoVisible = getFilteredDatasets("isotherm").length;
+  const kinVisible = getFilteredDatasets("kinetic").length;
+  document.getElementById("status").innerHTML = `<b>Status:</b> ${isoVisible} Isothermen und ${kinVisible} Kinetiken entsprechen den aktuellen Filtern.`;
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 init();
