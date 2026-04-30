@@ -37,13 +37,63 @@ h3, h4 {
 }
 
 .panelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
   margin-bottom: 16px;
+}
+
+.panelHeaderText {
+  min-width: 0;
+}
+
+.resetButton {
+  border: 1px solid #b6c5da;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.resetButton:hover {
+  background: #f1f5fb;
 }
 
 .panelSubline {
   margin-top: 6px;
   color: #5b6472;
   font-size: 14px;
+}
+
+.viewerOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.optionItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #374151;
+}
+
+.optionItem input[type="checkbox"] {
+  accent-color: #1f4dbd;
+}
+
+.tableOptions {
+  margin-bottom: 10px;
+}
+
+.separatorLeft {
+  border-left: 2px solid #d7dfeb;
 }
 
 .filterGrid {
@@ -106,11 +156,32 @@ table {
   font-size: 14px;
 }
 
+.dataTable {
+  table-layout: fixed;
+  width: max-content;
+  min-width: max-content;
+}
+
+.dataTableIdCol {
+  width: 0.5cm;
+  min-width: 0.5cm;
+  max-width: 0.5cm;
+}
+
+.dataTableValueCol {
+  width: 1.5cm;
+  min-width: 1.5cm;
+  max-width: 1.5cm;
+}
+
 th, td {
   padding: 10px 12px;
   border-bottom: 1px solid #e5ebf3;
   text-align: left;
   vertical-align: top;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 th {
@@ -148,9 +219,13 @@ th {
 <div class="dashboard">
   <section class="panel">
     <div class="panelHeader">
-      <h3>Isothermen</h3>
-      <div class="panelSubline" id="isothermSummary"></div>
+      <div class="panelHeaderText">
+        <h3>Isothermen</h3>
+        <div class="panelSubline" id="isothermSummary"></div>
+      </div>
+      <button id="isothermResetButton" class="resetButton" type="button">Reset</button>
     </div>
+    <div id="isothermOptions" class="viewerOptions"></div>
     <div id="isothermFilters" class="filterGrid"></div>
     <div class="chartWrapper">
       <canvas id="isothermChart" class="chartCanvas"></canvas>
@@ -161,15 +236,20 @@ th {
     </div>
     <div class="tableSection">
       <h4>Messdaten</h4>
+      <div id="isothermDataOptions" class="tableOptions"></div>
       <div class="tableBox" id="isothermDataTable"></div>
     </div>
   </section>
 
   <section class="panel">
     <div class="panelHeader">
-      <h3>Kinetiken</h3>
-      <div class="panelSubline" id="kineticSummary"></div>
+      <div class="panelHeaderText">
+        <h3>Kinetiken</h3>
+        <div class="panelSubline" id="kineticSummary"></div>
+      </div>
+      <button id="kineticResetButton" class="resetButton" type="button">Reset</button>
     </div>
+    <div id="kineticOptions" class="viewerOptions"></div>
     <div id="kineticFilters" class="filterGrid"></div>
     <div class="chartWrapper">
       <canvas id="kineticChart" class="chartCanvas"></canvas>
@@ -180,8 +260,10 @@ th {
     </div>
     <div class="tableSection">
       <h4>Messdaten</h4>
+      <div id="kineticDataOptions" class="tableOptions"></div>
       <div class="tableBox" id="kineticDataTable"></div>
     </div>
+  </section>
   </div>
 
 <div id="status"></div>
@@ -190,12 +272,16 @@ th {
 const viewerConfigs = {
   isotherm: {
     title: "Isothermen",
+    prefix: "iso_",
     pathCandidates: ["Data/isotherms.ndjson", "Data/isotherms.json"],
     type: "isotherm",
     chartId: "isothermChart",
+    resetButtonId: "isothermResetButton",
+    optionsId: "isothermOptions",
     filtersId: "isothermFilters",
     summaryId: "isothermSummary",
     metaTableId: "isothermMetaTable",
+    dataOptionsId: "isothermDataOptions",
     dataTableId: "isothermDataTable",
     xAxisLabel: "Gleichgewichtskonzentration (mg/L)",
     yAxisLabel: "Beladung (mg/g)",
@@ -203,12 +289,16 @@ const viewerConfigs = {
   },
   kinetic: {
     title: "Kinetiken",
+    prefix: "kin_",
     pathCandidates: ["Data/kinetics.ndjson", "Data/kinetics.json"],
     type: "kinetic",
     chartId: "kineticChart",
+    resetButtonId: "kineticResetButton",
+    optionsId: "kineticOptions",
     filtersId: "kineticFilters",
     summaryId: "kineticSummary",
     metaTableId: "kineticMetaTable",
+    dataOptionsId: "kineticDataOptions",
     dataTableId: "kineticDataTable",
     xAxisLabel: "Zeit (min)",
     yAxisLabel: "Konzentration (mg/L)",
@@ -217,9 +307,11 @@ const viewerConfigs = {
 };
 
 const viewerState = {
-  isotherm: { datasets: [], filterKeys: [], filters: {}, chart: null },
-  kinetic: { datasets: [], filterKeys: [], filters: {}, chart: null }
+  isotherm: { datasets: [], filterKeys: [], filters: {}, options: { showLegendOverride: false, showAllDataTableDatasets: false }, chart: null },
+  kinetic: { datasets: [], filterKeys: [], filters: {}, options: { showLegendOverride: false, showAllDataTableDatasets: false }, chart: null }
 };
+
+const collator = new Intl.Collator("de", { numeric: true, sensitivity: "base" });
 
 function parseDatasetText(text) {
   const trimmed = text.trim();
@@ -256,13 +348,71 @@ async function loadDataset(paths) {
   throw lastError || new Error("Konnte Datensatz nicht laden");
 }
 
+async function discoverJsonFilesByPrefix(prefix) {
+  const response = await fetch("Data/");
+  if (!response.ok) {
+    throw new Error(`Data-Verzeichnis konnte nicht gelesen werden (HTTP ${response.status})`);
+  }
+
+  const indexHtml = await response.text();
+  const hrefRegex = /href\s*=\s*["']([^"']+)["']/gi;
+  const files = new Set();
+  let match;
+
+  while ((match = hrefRegex.exec(indexHtml)) !== null) {
+    const href = match[1];
+    const decoded = decodeURIComponent(href);
+    const normalized = decoded.split("?")[0].split("#")[0];
+    const fileName = normalized.split("/").pop() || "";
+    if (!fileName.toLowerCase().endsWith(".json")) continue;
+    if (!fileName.startsWith(prefix)) continue;
+    files.add(fileName);
+  }
+
+  return [...files].sort((left, right) => collator.compare(left, right));
+}
+
+async function loadDatasetsByPrefix(config) {
+  const fileNames = await discoverJsonFilesByPrefix(config.prefix);
+  if (fileNames.length === 0) {
+    throw new Error(`Keine Dateien mit Prefix \"${config.prefix}\" im Data-Verzeichnis gefunden`);
+  }
+
+  const datasets = [];
+  for (const fileName of fileNames) {
+    const parsed = await loadDataset(`Data/${fileName}`);
+    datasets.push(...parsed.map((dataset, index) => ({
+      ...dataset,
+      type: dataset.type || config.type,
+      name: dataset.name || dataset.id || `${fileName}#${index + 1}`
+    })));
+  }
+
+  return datasets;
+}
+
+async function loadDatasetsForViewer(config) {
+  try {
+    return await loadDatasetsByPrefix(config);
+  } catch {
+    const fallback = await loadDataset(config.pathCandidates);
+    return fallback.map((dataset, index) => ({
+      ...dataset,
+      type: dataset.type || config.type,
+      name: dataset.name || dataset.id || `${config.type}_${index + 1}`
+    }));
+  }
+}
+
 async function init() {
   try {
-    const iso = await loadDataset(viewerConfigs.isotherm.pathCandidates);
-    const kin = await loadDataset(viewerConfigs.kinetic.pathCandidates);
+    const [iso, kin] = await Promise.all([
+      loadDatasetsForViewer(viewerConfigs.isotherm),
+      loadDatasetsForViewer(viewerConfigs.kinetic)
+    ]);
 
-    viewerState.isotherm.datasets = iso.filter((dataset) => dataset.type === viewerConfigs.isotherm.type);
-    viewerState.kinetic.datasets = kin.filter((dataset) => dataset.type === viewerConfigs.kinetic.type);
+    viewerState.isotherm.datasets = iso;
+    viewerState.kinetic.datasets = kin;
 
     initViewer("isotherm");
     initViewer("kinetic");
@@ -318,13 +468,87 @@ function initViewer(viewerKey) {
   state.filterKeys = getFilterKeys(state.datasets);
   state.filters = Object.fromEntries(["name", ...state.filterKeys].map((key) => [key, "all"]));
   state.chart = createChart(config);
+  bindResetButton(viewerKey);
 
+  renderOptionControls(viewerKey);
+  renderDataOptionsControls(viewerKey);
   renderFilterControls(viewerKey);
   renderViewer(viewerKey);
 }
 
+function bindResetButton(viewerKey) {
+  const config = viewerConfigs[viewerKey];
+  const button = document.getElementById(config.resetButtonId);
+  if (!button) return;
+
+  button.addEventListener("click", () => {
+    const state = viewerState[viewerKey];
+    Object.keys(state.filters).forEach((filterKey) => {
+      state.filters[filterKey] = "all";
+    });
+
+    renderFilterControls(viewerKey);
+    renderViewer(viewerKey);
+    updateStatus();
+  });
+}
+
+function renderOptionControls(viewerKey) {
+  const state = viewerState[viewerKey];
+  const config = viewerConfigs[viewerKey];
+  const container = document.getElementById(config.optionsId);
+
+  container.innerHTML = "";
+
+  const legendOption = document.createElement("label");
+  legendOption.className = "optionItem";
+
+  const legendCheckbox = document.createElement("input");
+  legendCheckbox.type = "checkbox";
+  legendCheckbox.checked = state.options.showLegendOverride;
+  legendCheckbox.addEventListener("change", (event) => {
+    state.options.showLegendOverride = event.target.checked;
+    renderViewer(viewerKey);
+    updateStatus();
+  });
+
+  const legendText = document.createElement("span");
+  legendText.textContent = "Legende manuell anzeigen";
+  legendOption.appendChild(legendCheckbox);
+  legendOption.appendChild(legendText);
+
+  container.appendChild(legendOption);
+}
+
+function renderDataOptionsControls(viewerKey) {
+  const state = viewerState[viewerKey];
+  const config = viewerConfigs[viewerKey];
+  const container = document.getElementById(config.dataOptionsId);
+
+  container.innerHTML = "";
+
+  const option = document.createElement("label");
+  option.className = "optionItem";
+
+  const checkbox = document.createElement("input");
+  checkbox.type = "checkbox";
+  checkbox.checked = state.options.showAllDataTableDatasets;
+  checkbox.addEventListener("change", (event) => {
+    state.options.showAllDataTableDatasets = event.target.checked;
+    renderViewer(viewerKey);
+    updateStatus();
+  });
+
+  const text = document.createElement("span");
+  text.textContent = "Mehr als 10 Datensaetze in Messdaten anzeigen";
+  option.appendChild(checkbox);
+  option.appendChild(text);
+
+  container.appendChild(option);
+}
+
 function getFilterKeys(datasets) {
-  return [...new Set(datasets.flatMap((dataset) => Object.keys(dataset.meta || {})))].sort((left, right) => left.localeCompare(right, "de"));
+  return [...new Set(datasets.flatMap((dataset) => Object.keys(dataset.meta || {})))].sort((left, right) => collator.compare(String(left), String(right)));
 }
 
 function renderFilterControls(viewerKey) {
@@ -373,8 +597,11 @@ function renderFilterControls(viewerKey) {
 }
 
 function getFilterValues(datasets, filterKey) {
-  const values = datasets.map((dataset) => getDatasetFieldValue(dataset, filterKey)).filter((value) => value !== "");
-  return [...new Set(values)].sort((left, right) => left.localeCompare(right, "de"));
+  const values = datasets
+    .map((dataset) => normalizeFilterValue(getDatasetFieldValue(dataset, filterKey)))
+    .filter((value) => value !== "");
+
+  return [...new Set(values)].sort((left, right) => collator.compare(left, right));
 }
 
 function getDatasetFieldValue(dataset, filterKey) {
@@ -382,34 +609,56 @@ function getDatasetFieldValue(dataset, filterKey) {
   return dataset.meta?.[filterKey] ?? "";
 }
 
+function normalizeFilterValue(value) {
+  if (value === null || value === undefined) return "";
+  return typeof value === "string" ? value : String(value);
+}
+
 function getFilteredDatasets(viewerKey) {
   const state = viewerState[viewerKey];
   return state.datasets.filter((dataset) => Object.entries(state.filters).every(([filterKey, selectedValue]) => {
     if (selectedValue === "all") return true;
-    return getDatasetFieldValue(dataset, filterKey) === selectedValue;
+    return normalizeFilterValue(getDatasetFieldValue(dataset, filterKey)) === selectedValue;
   }));
+}
+
+function getDisplayedDatasets(viewerKey) {
+  const filteredDatasets = getFilteredDatasets(viewerKey);
+  return filteredDatasets.slice(0, 10);
+}
+
+function getDisplayedDataTableDatasets(viewerKey) {
+  const state = viewerState[viewerKey];
+  const filteredDatasets = getFilteredDatasets(viewerKey);
+  if (state.options.showAllDataTableDatasets) return filteredDatasets;
+  return filteredDatasets.slice(0, 10);
 }
 
 function renderViewer(viewerKey) {
   const state = viewerState[viewerKey];
   const config = viewerConfigs[viewerKey];
   const filteredDatasets = getFilteredDatasets(viewerKey);
-  const isSingleDataset = filteredDatasets.length === 1;
+  const displayedDatasets = getDisplayedDatasets(viewerKey);
+  const displayedDataTableDatasets = getDisplayedDataTableDatasets(viewerKey);
+  const isSingleDataset = displayedDatasets.length === 1;
+  const shouldShowLegend = state.options.showLegendOverride || displayedDatasets.length < 10;
 
-  state.chart.data.datasets = buildChartSeries(filteredDatasets, isSingleDataset ? config.singleColor : null);
+  state.chart.options.plugins.legend.display = shouldShowLegend;
+  state.chart.data.datasets = buildChartSeries(displayedDatasets, isSingleDataset ? config.singleColor : null);
   state.chart.update();
 
-  renderMetaTable(viewerKey, filteredDatasets);
-  renderDataTable(viewerKey, filteredDatasets);
-  updateSummary(viewerKey, filteredDatasets.length);
+  renderMetaTable(viewerKey, displayedDatasets);
+  renderDataTable(viewerKey, displayedDataTableDatasets);
+  updateSummary(viewerKey, displayedDatasets.length, filteredDatasets.length);
 }
 
-function updateSummary(viewerKey, visibleCount) {
+function updateSummary(viewerKey, visibleCount, filteredCount) {
   const state = viewerState[viewerKey];
   const config = viewerConfigs[viewerKey];
   const activeFilters = Object.entries(state.filters).filter(([, value]) => value !== "all").length;
+  const limitNote = filteredCount > visibleCount ? `, Anzeige auf ${visibleCount} Datensaetze begrenzt` : "";
 
-  document.getElementById(config.summaryId).textContent = `${visibleCount} von ${state.datasets.length} Datensaetzen sichtbar, ${activeFilters} Filter aktiv`;
+  document.getElementById(config.summaryId).textContent = `${visibleCount} von ${filteredCount} gefilterten Datensaetzen sichtbar (${state.datasets.length} gesamt), ${activeFilters} Filter aktiv${limitNote}`;
 }
 
 function renderMetaTable(viewerKey, datasets) {
@@ -436,40 +685,62 @@ function renderDataTable(viewerKey, datasets) {
   const config = viewerConfigs[viewerKey];
   const container = document.getElementById(config.dataTableId);
 
-  const rows = datasets.flatMap((dataset) => dataset.data.map((point, index) => ({
-    datasetName: dataset.name,
-    pointIndex: index + 1,
-    x: point.x,
-    y: point.y
-  })));
-
-  if (rows.length === 0) {
+  if (datasets.length === 0) {
     container.innerHTML = '<div class="emptyState">Keine Messpunkte fuer die aktuelle Filterkombination gefunden.</div>';
     return;
   }
 
-  const bodyRows = rows.map((row) => (
-    `<tr><td>${escapeHtml(row.datasetName)}</td><td>${row.pointIndex}</td><td>${row.x}</td><td>${row.y}</td></tr>`
-  )).join("");
+  const maxPoints = Math.max(...datasets.map((dataset) => Array.isArray(dataset.data) ? dataset.data.length : 0), 0);
+  if (maxPoints === 0) {
+    container.innerHTML = '<div class="emptyState">Keine Messpunkte fuer die aktuelle Filterkombination gefunden.</div>';
+    return;
+  }
+
+  const topHeader = datasets.map((dataset) => {
+    const datasetLabel = dataset.id || dataset.name || "-";
+    return `<th class="separatorLeft dataTableValueCol" colspan="2">${escapeHtml(datasetLabel)}</th>`;
+  }).join("");
+
+  const subHeader = datasets.map(() => "<th class=\"separatorLeft dataTableValueCol\">x</th><th class=\"dataTableValueCol\">y</th>").join("");
+
+  const colGroup = [
+    '<col class="dataTableIdCol">',
+    ...datasets.flatMap(() => ['<col class="dataTableValueCol">', '<col class="dataTableValueCol">'])
+  ].join("");
+
+  const bodyRows = Array.from({ length: maxPoints }, (_, rowIndex) => {
+    const cells = datasets.map((dataset) => {
+      const point = dataset.data?.[rowIndex];
+      const x = point?.x ?? "";
+      const y = point?.y ?? "";
+      return `<td class="separatorLeft dataTableValueCol">${escapeHtml(x)}</td><td class="dataTableValueCol">${escapeHtml(y)}</td>`;
+    }).join("");
+
+    return `<tr><td class="dataTableIdCol">${rowIndex + 1}</td>${cells}</tr>`;
+  }).join("");
 
   container.innerHTML = `
-    <table>
+    <table class="dataTable">
+      <colgroup>${colGroup}</colgroup>
       <thead>
         <tr>
-          <th>Datensatz</th>
-          <th>Punkt</th>
-          <th>x</th>
-          <th>y</th>
+          <th class="dataTableIdCol">ID</th>
+          ${topHeader}
         </tr>
+        <tr><th class="dataTableIdCol"></th>${subHeader}</tr>
       </thead>
       <tbody>${bodyRows}</tbody>
     </table>`;
 }
 
 function updateStatus() {
-  const isoVisible = getFilteredDatasets("isotherm").length;
-  const kinVisible = getFilteredDatasets("kinetic").length;
-  document.getElementById("status").innerHTML = `<b>Status:</b> ${isoVisible} Isothermen und ${kinVisible} Kinetiken entsprechen den aktuellen Filtern.`;
+  const isoFiltered = getFilteredDatasets("isotherm").length;
+  const kinFiltered = getFilteredDatasets("kinetic").length;
+  const isoShown = getDisplayedDatasets("isotherm").length;
+  const kinShown = getDisplayedDatasets("kinetic").length;
+  const isoTableShown = getDisplayedDataTableDatasets("isotherm").length;
+  const kinTableShown = getDisplayedDataTableDatasets("kinetic").length;
+  document.getElementById("status").innerHTML = `<b>Status:</b> Charts/Metadaten: ${isoShown}/${isoFiltered} Isothermen und ${kinShown}/${kinFiltered} Kinetiken. Messdaten: ${isoTableShown}/${isoFiltered} Isothermen und ${kinTableShown}/${kinFiltered} Kinetiken.`;
 }
 
 function escapeHtml(value) {
