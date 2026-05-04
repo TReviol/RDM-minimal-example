@@ -34,7 +34,7 @@ jobs:
           if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
             files=$(git ls-files 'Data/raw-isotherms/*.json' || true)
           else
-            files=$(git diff --name-only --diff-filter=ACMRT "$BEFORE" "$AFTER" -- 'Data/raw-isotherms/*.json' || true)
+            files=$(git diff --name-only --diff-filter=A "$BEFORE" "$AFTER" -- 'Data/raw-isotherms/*.json' || true)
           fi
 
           echo "files<<EOF" >> $GITHUB_OUTPUT
@@ -57,6 +57,13 @@ jobs:
             
             echo "Processing $file"
             jq empty "$file" || { echo "Invalid JSON: $file"; exit 1; }
+
+            id=$(jq -r '.id // empty' "$file")
+            if [ -n "$id" ] && jq -e --arg id "$id" 'select(.id == $id)' Data/isotherms.ndjson >/dev/null 2>&1; then
+              echo "Skipping $file (id already present: $id)"
+              continue
+            fi
+
             jq -c . "$file" >> Data/isotherms.ndjson
           done <<< "${{ steps.files.outputs.files }}"
 

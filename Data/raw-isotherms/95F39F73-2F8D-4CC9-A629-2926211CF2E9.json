@@ -1,0 +1,72 @@
+{
+    "id": "95F39F73-2F8D-4CC9-A629-2926211CF2E9",
+    "type": "isotherm",
+    "name": "Fe@GAC_009",
+    "data": [
+        {
+            "x": 1,
+            "y": 4
+        },
+        {
+            "x": 2,
+            "y": 5
+        },
+        {
+            "x": 3,
+            "y": 6
+        },
+        {
+            "x": 4,
+            "y": 7
+        },
+        {
+            "x": 5,
+            "y": 8
+        },
+        {
+            "x": 6,
+            "y": 9
+        },
+        {
+            "x": 7,
+            "y": 10
+        },
+        {
+            "x": 8,
+            "y": 11
+        },
+        {
+            "x": 9,
+            "y": 12
+        },
+        {
+            "x": 10,
+            "y": 13
+        }
+    ],
+    "meta": {
+        "Material-ID": "Fe@GAC_009",
+        "Materialname": "Fe@GAC",
+        "Charge/Batch": "B2026-12",
+        "Datum": "09.01.2025",
+        "Experimentator": "S. Hoffmann",
+        "Adsorbenskonzentration": "0.7 g/L",
+        "Adsorbensmasse": "0.7 g/L",
+        "Vorbehandlung": "mit N2 entgast",
+        "Matrix": "MW 2",
+        "pH": 7,
+        "Startkonzentration / mg/L": 6,
+        "Lösungsvolumen": "0.5 L",
+        "Probenahmezeitpunkt": "18 h",
+        "Probenvolumen": "3 mL",
+        "Verdünnung": "unverdünnt",
+        "Filtration/Zentrifugation": "0,22 µm PES",
+        "Analysemethode": "AAS",
+        "Messdatum Analytik": "09.01.2026",
+        "Gleichgewichtskonzentration / mg/L": 4,
+        "Temperatur / C°": 19,
+        "Schüttler/Rührer-Typ": "Orbitalschüttler",
+        "Geschwindigkeit Schüttler/Rührer / rpm": 220,
+        "Anmerkungen": "sehr geringe Restkonzentration"
+    }
+}
