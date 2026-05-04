@@ -1,0 +1,72 @@
+{
+    "id": "B6A19F03-CE52-47D8-9B14-3D8F2A7C5E91",
+    "type": "isotherm",
+    "name": "Fe@GAC_004",
+    "data": [
+        {
+            "x": 1,
+            "y": 8
+        },
+        {
+            "x": 2,
+            "y": 9
+        },
+        {
+            "x": 3,
+            "y": 10
+        },
+        {
+            "x": 4,
+            "y": 11
+        },
+        {
+            "x": 5,
+            "y": 12
+        },
+        {
+            "x": 6,
+            "y": 13
+        },
+        {
+            "x": 7,
+            "y": 14
+        },
+        {
+            "x": 8,
+            "y": 15
+        },
+        {
+            "x": 9,
+            "y": 16
+        },
+        {
+            "x": 10,
+            "y": 17
+        }
+    ],
+    "meta": {
+        "Material-ID": "Fe@GAC_004",
+        "Materialname": "Fe@GAC",
+        "Charge/Batch": "B2026-07",
+        "Datum": "04.01.2025",
+        "Experimentator": "M. Klein",
+        "Adsorbenskonzentration": "1.2 g/L",
+        "Adsorbensmasse": "1.2 g/L",
+        "Vorbehandlung": "ungewaschen",
+        "Matrix": "MW 3",
+        "pH": 7.5,
+        "Startkonzentration / mg/L": 20,
+        "Lösungsvolumen": "1 L",
+        "Probenahmezeitpunkt": "48 h",
+        "Probenvolumen": "3 mL",
+        "Verdünnung": "1:20",
+        "Filtration/Zentrifugation": "0,2 µm PES",
+        "Analysemethode": "ICP",
+        "Messdatum Analytik": "04.01.2026",
+        "Gleichgewichtskonzentration / mg/L": 14,
+        "Temperatur / C°": 20,
+        "Schüttler/Rührer-Typ": "Rollenmischer",
+        "Geschwindigkeit Schüttler/Rührer / rpm": 40,
+        "Anmerkungen": "leichte Schaumbildung"
+    }
+}

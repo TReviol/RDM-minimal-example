@@ -1,0 +1,72 @@
+{
+    "id": "29E8D6B4-1A7F-4C93-B5D1-7E20FA6C3B84",
+    "type": "isotherm",
+    "name": "Fe@GAC_003",
+    "data": [
+        {
+            "x": 1,
+            "y": 9
+        },
+        {
+            "x": 2,
+            "y": 10
+        },
+        {
+            "x": 3,
+            "y": 11
+        },
+        {
+            "x": 4,
+            "y": 12
+        },
+        {
+            "x": 5,
+            "y": 13
+        },
+        {
+            "x": 6,
+            "y": 14
+        },
+        {
+            "x": 7,
+            "y": 15
+        },
+        {
+            "x": 8,
+            "y": 16
+        },
+        {
+            "x": 9,
+            "y": 17
+        },
+        {
+            "x": 10,
+            "y": 18
+        }
+    ],
+    "meta": {
+        "Material-ID": "Fe@GAC_003",
+        "Materialname": "Fe@GAC",
+        "Charge/Batch": "B2026-06",
+        "Datum": "03.01.2025",
+        "Experimentator": "M. Klein",
+        "Adsorbenskonzentration": "0.8 g/L",
+        "Adsorbensmasse": "0.8 g/L",
+        "Vorbehandlung": "in Puffer vorgelagert",
+        "Matrix": "Grundwasser",
+        "pH": 7,
+        "Startkonzentration / mg/L": 10,
+        "Lösungsvolumen": "0.5 L",
+        "Probenahmezeitpunkt": "12 h",
+        "Probenvolumen": "2 mL",
+        "Verdünnung": "1:2",
+        "Filtration/Zentrifugation": "Zentrifugation 5000 rpm",
+        "Analysemethode": "AAS",
+        "Messdatum Analytik": "03.01.2026",
+        "Gleichgewichtskonzentration / mg/L": 9,
+        "Temperatur / C°": 22,
+        "Schüttler/Rührer-Typ": "Magnetrührer",
+        "Geschwindigkeit Schüttler/Rührer / rpm": 350,
+        "Anmerkungen": "kein Niederschlag"
+    }
+}

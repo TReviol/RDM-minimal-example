@@ -1,0 +1,72 @@
+{
+    "id": "7E3B10C5-A924-4F6D-B8C2-1A5D9E74F3B6",
+    "type": "isotherm",
+    "name": "Fe@GAC_006",
+    "data": [
+        {
+            "x": 1,
+            "y": 12
+        },
+        {
+            "x": 2,
+            "y": 13
+        },
+        {
+            "x": 3,
+            "y": 14
+        },
+        {
+            "x": 4,
+            "y": 15
+        },
+        {
+            "x": 5,
+            "y": 16
+        },
+        {
+            "x": 6,
+            "y": 17
+        },
+        {
+            "x": 7,
+            "y": 18
+        },
+        {
+            "x": 8,
+            "y": 19
+        },
+        {
+            "x": 9,
+            "y": 20
+        },
+        {
+            "x": 10,
+            "y": 21
+        }
+    ],
+    "meta": {
+        "Material-ID": "Fe@GAC_006",
+        "Materialname": "Fe@GAC",
+        "Charge/Batch": "B2026-09",
+        "Datum": "06.01.2025",
+        "Experimentator": "L. Weber",
+        "Adsorbenskonzentration": "1.5 g/L",
+        "Adsorbensmasse": "1.4 g/L",
+        "Vorbehandlung": "thermisch aktiviert",
+        "Matrix": "MW 1",
+        "pH": 7,
+        "Startkonzentration / mg/L": 25,
+        "Lösungsvolumen": "1 L",
+        "Probenahmezeitpunkt": "24 h",
+        "Probenvolumen": "3 mL",
+        "Verdünnung": "1:25",
+        "Filtration/Zentrifugation": "0,45 µm Zelluloseacetat",
+        "Analysemethode": "ICP",
+        "Messdatum Analytik": "06.01.2026",
+        "Gleichgewichtskonzentration / mg/L": 18,
+        "Temperatur / C°": 25,
+        "Schüttler/Rührer-Typ": "Magnetrührer",
+        "Geschwindigkeit Schüttler/Rührer / rpm": 320,
+        "Anmerkungen": "hohe Aufnahme"
+    }
+}

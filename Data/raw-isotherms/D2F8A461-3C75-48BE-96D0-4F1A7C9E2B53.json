@@ -1,0 +1,72 @@
+{
+    "id": "D2F8A461-3C75-48BE-96D0-4F1A7C9E2B53",
+    "type": "isotherm",
+    "name": "Fe@GAC_007",
+    "data": [
+        {
+            "x": 1,
+            "y": 6
+        },
+        {
+            "x": 2,
+            "y": 7
+        },
+        {
+            "x": 3,
+            "y": 8
+        },
+        {
+            "x": 4,
+            "y": 9
+        },
+        {
+            "x": 5,
+            "y": 10
+        },
+        {
+            "x": 6,
+            "y": 11
+        },
+        {
+            "x": 7,
+            "y": 12
+        },
+        {
+            "x": 8,
+            "y": 13
+        },
+        {
+            "x": 9,
+            "y": 14
+        },
+        {
+            "x": 10,
+            "y": 15
+        }
+    ],
+    "meta": {
+        "Material-ID": "Fe@GAC_007",
+        "Materialname": "Fe@GAC",
+        "Charge/Batch": "B2026-10",
+        "Datum": "07.01.2025",
+        "Experimentator": "T. Braun",
+        "Adsorbenskonzentration": "1 g/L",
+        "Adsorbensmasse": "1 g/L",
+        "Vorbehandlung": "mit Reinstwasser gewaschen",
+        "Matrix": "MW 4",
+        "pH": 8,
+        "Startkonzentration / mg/L": 9,
+        "Lösungsvolumen": "1 L",
+        "Probenahmezeitpunkt": "6 h",
+        "Probenvolumen": "2 mL",
+        "Verdünnung": "unverdünnt",
+        "Filtration/Zentrifugation": "Zentrifugation 3000 rpm",
+        "Analysemethode": "UV/VIS",
+        "Messdatum Analytik": "07.01.2026",
+        "Gleichgewichtskonzentration / mg/L": 6,
+        "Temperatur / C°": 20,
+        "Schüttler/Rührer-Typ": "Überkopfschüttler",
+        "Geschwindigkeit Schüttler/Rührer / rpm": 35,
+        "Anmerkungen": "schnelles Gleichgewicht"
+    }
+}

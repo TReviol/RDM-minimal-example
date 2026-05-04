@@ -1,0 +1,72 @@
+{
+    "id": "C94D2E71-5F83-4AB6-A1E9-8B37D0F2C6A4",
+    "type": "isotherm",
+    "name": "Fe@GAC_005",
+    "data": [
+        {
+            "x": 1,
+            "y": 7
+        },
+        {
+            "x": 2,
+            "y": 8
+        },
+        {
+            "x": 3,
+            "y": 9
+        },
+        {
+            "x": 4,
+            "y": 10
+        },
+        {
+            "x": 5,
+            "y": 11
+        },
+        {
+            "x": 6,
+            "y": 12
+        },
+        {
+            "x": 7,
+            "y": 13
+        },
+        {
+            "x": 8,
+            "y": 14
+        },
+        {
+            "x": 9,
+            "y": 15
+        },
+        {
+            "x": 10,
+            "y": 16
+        }
+    ],
+    "meta": {
+        "Material-ID": "Fe@GAC_005",
+        "Materialname": "Fe@GAC",
+        "Charge/Batch": "B2026-08",
+        "Datum": "05.01.2025",
+        "Experimentator": "L. Weber",
+        "Adsorbenskonzentration": "0.5 g/L",
+        "Adsorbensmasse": "0.5 g/L",
+        "Vorbehandlung": "in Ethanol gespült",
+        "Matrix": "Oberflächenwasser",
+        "pH": 6,
+        "Startkonzentration / mg/L": 8,
+        "Lösungsvolumen": "0.75 L",
+        "Probenahmezeitpunkt": "24 h",
+        "Probenvolumen": "4 mL",
+        "Verdünnung": "1:1",
+        "Filtration/Zentrifugation": "0,45 µm Nylon",
+        "Analysemethode": "UV/VIS",
+        "Messdatum Analytik": "05.01.2026",
+        "Gleichgewichtskonzentration / mg/L": 7,
+        "Temperatur / C°": 18,
+        "Schüttler/Rührer-Typ": "Orbitalschüttler",
+        "Geschwindigkeit Schüttler/Rührer / rpm": 200,
+        "Anmerkungen": "geringe Adsorption"
+    }
+}
