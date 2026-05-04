@@ -1,79 +1,57 @@
-name: Append new isotherm JSON to NDJSON
+name: Rebuild isotherms.ndjson
 
 on:
   push:
-    paths:
-      - 'Data/raw-isotherms/*.json'
 
 permissions:
   contents: write
 
 concurrency:
-  group: ndjson-update
-  cancel-in-progress: false
+  group: rebuild-isotherms-ndjson
+  cancel-in-progress: true
 
 jobs:
-  append-to-ndjson:
+  rebuild-ndjson:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
-      - name: Find new JSON files
-        id: files
-        run: |
-          BEFORE="${{ github.event.before }}"
-          AFTER="${{ github.sha }}"
-
-          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-            files=$(git ls-files 'Data/raw-isotherms/*.json' || true)
-          else
-            files=$(git diff --name-only --diff-filter=A "$BEFORE" "$AFTER" -- 'Data/raw-isotherms/*.json' || true)
-          fi
-
-          echo "files<<EOF" >> $GITHUB_OUTPUT
-          echo "$files" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
-
-      - name: Append to NDJSON
+      - name: Rebuild Data/isotherms.ndjson from Data/raw-isotherms
         run: |
           set -euo pipefail
-          touch Data/isotherms.ndjson
 
-          if [ -z "${{ steps.files.outputs.files }}" ]; then
-            echo "No new files"
+          mkdir -p Data
+          : > Data/isotherms.ndjson
+
+          shopt -s nullglob
+          files=(Data/raw-isotherms/*.json)
+
+          if [ ${#files[@]} -eq 0 ]; then
+            echo "No raw isotherm files found. Created empty Data/isotherms.ndjson"
             exit 0
           fi
 
-          while IFS= read -r file; do
-            [ -z "$file" ] && continue
-            [ -f "$file" ] || continue
-            
+          printf '%s\n' "${files[@]}" | sort | while IFS= read -r file; do
             echo "Processing $file"
-            jq empty "$file" || { echo "Invalid JSON: $file"; exit 1; }
-
-            id=$(jq -r '.id // empty' "$file")
-            if [ -n "$id" ] && jq -e --arg id "$id" 'select(.id == $id)' Data/isotherms.ndjson >/dev/null 2>&1; then
-              echo "Skipping $file (id already present: $id)"
-              continue
-            fi
-
+            jq -e . "$file" >/dev/null
             jq -c . "$file" >> Data/isotherms.ndjson
-          done <<< "${{ steps.files.outputs.files }}"
+          done
 
-      - name: Commit and push
+      - name: Commit and push if changed
         run: |
+          set -euo pipefail
+
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          git pull --rebase
-          
           git add -f Data/isotherms.ndjson
-          git diff --cached --quiet || git commit -m "Append new data to isotherms.ndjson"          
+          if git diff --cached --quiet; then
+            echo "No NDJSON changes to commit"
+            exit 0
+          fi
+
+          git commit -m "Rebuild isotherms.ndjson from raw-isotherms"
           git push
