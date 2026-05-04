@@ -2,12 +2,16 @@ name: Rebuild isotherms.ndjson
 
 on:
   push:
+    paths:
+      - Data/raw-isotherms/*.json
+      - .github/workflows/append-isotherms-ndjson.yml
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: rebuild-isotherms-ndjson
+  group: rebuild-isotherms-ndjson-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -20,27 +24,40 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Rebuild Data/isotherms.ndjson from Data/raw-isotherms
+        id: rebuild
+        shell: bash
         run: |
           set -euo pipefail
 
           mkdir -p Data
-          : > Data/isotherms.ndjson
+          tmp_file="$(mktemp)"
 
           shopt -s nullglob
           files=(Data/raw-isotherms/*.json)
+          IFS=$'\n' sorted_files=($(printf '%s\n' "${files[@]}" | sort))
+          unset IFS
 
-          if [ ${#files[@]} -eq 0 ]; then
-            echo "No raw isotherm files found. Created empty Data/isotherms.ndjson"
-            exit 0
+          if [ ${#sorted_files[@]} -eq 0 ]; then
+            echo "No raw isotherm files found. Creating empty Data/isotherms.ndjson"
+          else
+            for file in "${sorted_files[@]}"; do
+              echo "Processing $file"
+              jq -e . "$file" >/dev/null
+              jq -c . "$file" >> "$tmp_file"
+            done
           fi
 
-          printf '%s\n' "${files[@]}" | sort | while IFS= read -r file; do
-            echo "Processing $file"
-            jq -e . "$file" >/dev/null
-            jq -c . "$file" >> Data/isotherms.ndjson
-          done
+          if [ -f Data/isotherms.ndjson ] && cmp -s "$tmp_file" Data/isotherms.ndjson; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Data/isotherms.ndjson already up to date"
+          else
+            mv "$tmp_file" Data/isotherms.ndjson
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Data/isotherms.ndjson rebuilt"
+          fi
 
       - name: Commit and push if changed
+        if: steps.rebuild.outputs.changed == 'true'
         run: |
           set -euo pipefail
 
@@ -48,10 +65,7 @@ jobs:
           git config user.email "actions@github.com"
 
           git add -f Data/isotherms.ndjson
-          if git diff --cached --quiet; then
-            echo "No NDJSON changes to commit"
-            exit 0
-          fi
-
           git commit -m "Rebuild isotherms.ndjson from raw-isotherms"
+
+          git pull --rebase
           git push
