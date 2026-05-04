@@ -5,6 +5,9 @@ on:
     paths:
       - 'Data/raw-isotherms/*.json'
 
+permissions:
+  contents: write
+
 concurrency:
   group: ndjson-update
   cancel-in-progress: false
