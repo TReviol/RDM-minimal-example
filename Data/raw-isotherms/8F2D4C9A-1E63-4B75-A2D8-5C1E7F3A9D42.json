@@ -1,0 +1,42 @@
+{
+    "id": "8F2D4C9A-1E63-4B75-A2D8-5C1E7F3A9D42",
+    "type": "isotherm",
+    "name": "Fe@GAC_014",
+    "data": [
+        {"x": 1, "y": 14},
+        {"x": 2, "y": 15},
+        {"x": 3, "y": 16},
+        {"x": 4, "y": 17},
+        {"x": 5, "y": 18},
+        {"x": 6, "y": 19},
+        {"x": 7, "y": 20},
+        {"x": 8, "y": 21},
+        {"x": 9, "y": 22},
+        {"x": 10, "y": 23}
+    ],
+    "meta": {
+        "Material-ID": "Fe@GAC_014",
+        "Materialname": "Fe@GAC",
+        "Charge/Batch": "B2026-15",
+        "Datum": "12.01.2025",
+        "Experimentator": "R. Vogel",
+        "Adsorbenskonzentration": "1.3 g/L",
+        "Adsorbensmasse": "1.28 g/L",
+        "Vorbehandlung": "thermisch aktiviert",
+        "Matrix": "Oberflächenwasser",
+        "pH": 7.4,
+        "Startkonzentration / mg/L": 24,
+        "Lösungsvolumen": "0.75 L",
+        "Probenahmezeitpunkt": "24 h",
+        "Probenvolumen": "4 mL",
+        "Verdünnung": "1:10",
+        "Filtration/Zentrifugation": "0,22 µm PES",
+        "Analysemethode": "AAS",
+        "Messdatum Analytik": "12.01.2026",
+        "Gleichgewichtskonzentration / mg/L": 14,
+        "Temperatur / C°": 23,
+        "Schüttler/Rührer-Typ": "Magnetrührer",
+        "Geschwindigkeit Schüttler/Rührer / rpm": 320,
+        "Anmerkungen": "leichte Trübung nach 2 h"
+    }
+}
