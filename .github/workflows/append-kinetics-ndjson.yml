@@ -1,0 +1,71 @@
+name: Rebuild kinetics.ndjson
+
+on:
+  push:
+    paths:
+      - Data/raw-kinetics/*.json
+      - .github/workflows/append-kinetics-ndjson.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rebuild-kinetics-ndjson-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rebuild-ndjson:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Rebuild Data/kinetics.ndjson from Data/raw-kinetics
+        id: rebuild
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          mkdir -p Data
+          tmp_file="$(mktemp)"
+
+          shopt -s nullglob
+          files=(Data/raw-kinetics/*.json)
+          IFS=$'\n' sorted_files=($(printf '%s\n' "${files[@]}" | sort))
+          unset IFS
+
+          if [ ${#sorted_files[@]} -eq 0 ]; then
+            echo "No raw kinetic files found. Creating empty Data/kinetics.ndjson"
+          else
+            for file in "${sorted_files[@]}"; do
+              echo "Processing $file"
+              jq -e . "$file" >/dev/null
+              jq -c . "$file" >> "$tmp_file"
+            done
+          fi
+
+          if [ -f Data/kinetics.ndjson ] && cmp -s "$tmp_file" Data/kinetics.ndjson; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Data/kinetics.ndjson already up to date"
+          else
+            mv "$tmp_file" Data/kinetics.ndjson
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "Data/kinetics.ndjson rebuilt"
+          fi
+
+      - name: Commit and push if changed
+        if: steps.rebuild.outputs.changed == 'true'
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+
+          git add -f Data/kinetics.ndjson
+          git commit -m "Rebuild kinetics.ndjson from raw-kinetics"
+
+          git pull --rebase
+          git push
