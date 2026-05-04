@@ -26,8 +26,10 @@ jobs:
       - name: Find new JSON files
         id: files
         run: |
-          files=$(git log --name-only --pretty="" -n 1 | grep '^Data/raw-isotherms/.*\.json' || true)
-          echo "files=$files" >> $GITHUB_OUTPUT
+          files=$(git log --name-only --pretty="" -n 1 | grep '^Data/raw-isotherms/.*\.json' || true)      
+          echo "files<<EOF" >> $GITHUB_OUTPUT
+          echo "$files" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Append to NDJSON
         run: |
@@ -38,12 +40,12 @@ jobs:
             exit 0
           fi
 
-          for file in ${{ steps.files.outputs.files }}
+          echo "${{ steps.files.outputs.files}}" | while IFS=read -r file
           do
+            [ -z "$file" ] && continue
+            
             echo "Processing $file"
-
             jq empty "$file" || { echo "Invalid JSON: $file"; exit 1; }
-
             jq -c . "$file" >> Data/isotherms.ndjson
           done
 
@@ -52,9 +54,8 @@ jobs:
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          git add Data/isotherms.ndjson
-
-          git diff --cached --quiet || git commit -m "Append new data to isotherms.ndjson"
-
           git pull --rebase
+          
+          git add Data/isotherms.ndjson
+          git diff --cached --quiet || git commit -m "Append new data to isotherms.ndjson"          
           git push
