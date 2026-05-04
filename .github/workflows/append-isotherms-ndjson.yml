@@ -51,7 +51,7 @@ jobs:
             exit 0
           fi
 
-          while IFS=read -r file; do
+          while IFS= read -r file; do
             [ -z "$file" ] && continue
             [ -f "$file" ] || continue
             
