@@ -19,6 +19,8 @@ jobs:
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Install jq
         run: sudo apt-get update && sudo apt-get install -y jq
@@ -26,13 +28,22 @@ jobs:
       - name: Find new JSON files
         id: files
         run: |
-          files=$(git log --name-only --pretty="" -n 1 | grep '^Data/raw-isotherms/.*\.json' || true)      
+          BEFORE="${{ github.event.before }}"
+          AFTER="${{ github.sha }}"
+
+          if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            files=$(git ls-files 'Data/raw-isotherms/*.json' || true)
+          else
+            files=$(git diff --name-only --diff-filter=ACMRT "$BEFORE" "$AFTER" -- 'Data/raw-isotherms/*.json' || true)
+          fi
+
           echo "files<<EOF" >> $GITHUB_OUTPUT
           echo "$files" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Append to NDJSON
         run: |
+          set -euo pipefail
           touch Data/isotherms.ndjson
 
           if [ -z "${{ steps.files.outputs.files }}" ]; then
@@ -40,14 +51,14 @@ jobs:
             exit 0
           fi
 
-          echo "${{ steps.files.outputs.files}}" | while IFS=read -r file
-          do
+          while IFS=read -r file; do
             [ -z "$file" ] && continue
+            [ -f "$file" ] || continue
             
             echo "Processing $file"
             jq empty "$file" || { echo "Invalid JSON: $file"; exit 1; }
             jq -c . "$file" >> Data/isotherms.ndjson
-          done
+          done <<< "${{ steps.files.outputs.files }}"
 
       - name: Commit and push
         run: |
@@ -56,6 +67,6 @@ jobs:
 
           git pull --rebase
           
-          git add Data/isotherms.ndjson
+          git add -f Data/isotherms.ndjson
           git diff --cached --quiet || git commit -m "Append new data to isotherms.ndjson"          
           git push
